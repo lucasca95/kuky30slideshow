@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Photo Slideshow</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Inline styles for slideshow - will be moved to styles.css in task 12 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            cursor: default; /* Show cursor initially */
+        }
+
+        body.hide-cursor {
+            cursor: none; /* Hide cursor after inactivity */
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+        }
+
+        .photo-overlay {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            right: 50px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+        }
+
+        .photo-overlay h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .photo-overlay p {
+            font-size: 18px;
+            line-height: 1.4;
+            color: #ddd;
+        }
+
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            opacity: 1;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .welcome-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .welcome-screen p {
+            font-size: 24px;
+            margin-bottom: 40px;
+            max-width: 600px;
+            line-height: 1.4;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+        }
+
+        .upload-info {
+            font-size: 18px;
+            color: #f0f0f0;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .control-btn.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .photo-counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .photo-counter.admin-mode {
+            background: rgba(102, 126, 234, 0.8);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .admin-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .admin-indicator.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .loading.visible {
+            opacity: 1;
+        }
+
+        .qr-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .qr-modal.show {
+            display: flex;
+        }
+
+        .qr-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .qr-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-modal-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .qr-modal-body p {
+            color: #666;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+
+        .qr-code-modal {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .upload-url {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .photo-overlay {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                padding: 15px 20px;
+            }
+
+            .photo-overlay h3 {
+                font-size: 20px;
+            }
+
+            .photo-overlay p {
+                font-size: 16px;
+            }
+
+            .welcome-screen h1 {
+                font-size: 36px;
+            }
+
+            .welcome-screen p {
+                font-size: 20px;
+                padding: 0 20px;
+            }
+
+            .qr-code {
+                width: 150px;
+                height: 150px;
+            }
+
+            .qr-modal-content {
+                padding: 20px;
+            }
+
+            .qr-modal-header h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container">
+        <!-- Welcome screen shown when no photos -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <h1>🎉 Birthday Photo Slideshow</h1>
+            <p>Scan the QR code below with your phone to upload and share photos!</p>
+            
+            <div class="qr-container">
+                <div id="qrcode" class="qr-code"></div>
+            </div>
+            
+            <div class="upload-info">
+                <p>📱 Scan → Upload → Watch your photos appear!</p>
+            </div>
+        </div>
+
+        <!-- Photo slides will be dynamically added here -->
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn" id="pauseBtn">⏸️ Pause</button>
+        <button class="control-btn" id="prevBtn">⏮️ Previous</button>
+        <button class="control-btn" id="nextBtn">⏭️ Next</button>
+        <button class="control-btn" id="qrBtn">📱 QR Code</button>
+        <a href="/upload.html" class="control-btn" style="text-decoration: none;">📤 Upload</a>
+        <a href="/admin.html" class="control-btn" style="text-decoration: none;">⚙️ Admin</a>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="qr-modal" id="qrModal">
+        <div class="qr-modal-content">
+            <div class="qr-modal-header">
+                <h2>📱 Scan to Upload Photos</h2>
+                <button class="close-btn" id="closeQrModal">✕</button>
+            </div>
+            <div class="qr-modal-body">
+                <div id="qrcode-modal" class="qr-code-modal"></div>
+                <p>Scan this QR code with your phone to upload photos!</p>
+                <p class="upload-url" id="uploadUrl">Or visit: <span></span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo counter -->
+    <div class="photo-counter" id="photoCounter">
+        No photos yet
+    </div>
+
+    <!-- Admin indicator -->
+    <div class="admin-indicator" id="adminIndicator">
+        🔐 Admin Mode Active
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="loading" id="loadingIndicator">
+        Loading new photos...
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="js/slideshow.js"></script>
+</body>
+</html>
