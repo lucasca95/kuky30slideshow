@@ -95,4 +95,4 @@ birthday-photo-slideshow/
 
 ## Admin Password
 
-Default admin password: `LucasAdmin`
+Default admin password: `youradminpass`
