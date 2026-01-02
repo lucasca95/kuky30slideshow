@@ -1,6 +1,9 @@
 # Kiro
 .kiro
 
+# Uploads
+.uploads
+
 # Logs
 logs
 *.log
